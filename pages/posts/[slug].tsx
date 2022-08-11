@@ -11,6 +11,9 @@ import Head from 'next/head'
 import { CMS_NAME } from '../../lib/constants'
 import markdownToHtml from '../../lib/markdownToHtml'
 import PostType from '../../types/post'
+import tocbot from 'tocbot'
+import { useEffect } from 'react'
+import Toc from '../../components/toc'
 
 type Props = {
   post: PostType
@@ -20,9 +23,20 @@ type Props = {
 
 const Post = ({ post, morePosts, preview }: Props) => {
   const router = useRouter()
+
   if (!router.isFallback && !post?.slug) {
     return <ErrorPage statusCode={404} />
   }
+
+  useEffect(() =>{
+    tocbot.init({
+      tocSelector: '.toc',
+      contentSelector: '.post',
+      headingSelector: 'h1, h2, h3',
+    })
+    return () => tocbot.destroy()
+  }, [])
+
   return (
     <Layout preview={preview}>
       <Container>
@@ -30,23 +44,37 @@ const Post = ({ post, morePosts, preview }: Props) => {
         {router.isFallback ? (
           <PostTitle>Loading…</PostTitle>
         ) : (
-          <>
-            <article className="mb-32">
-              <Head>
-                <title>
-                  {post.title} | Next.js Blog Example with {CMS_NAME}
-                </title>
-                <meta property="og:image" content={post.ogImage.url} />
-              </Head>
-              <PostHeader
-                title={post.title}
-                coverImage={post.coverImage}
-                date={post.date}
-                author={post.author}
-              />
-              <PostBody content={post.content} />
-            </article>
-          </>
+              <article className="mb-32">
+              {/* <article className='w-full lg:w-3/5'> */}
+                <Head>
+                  <title>
+                    {post.title} | Next.js Blog Example with {CMS_NAME}
+                  </title>
+                  <meta property="og:image" content={post.ogImage.url} />
+                </Head>
+
+                <div className='flex flex-wrap'>
+
+                  <div className='lg:w-1/5 invisible lg:visible'></div>
+                  <div className='w-full lg:w-3/5'>
+                    <PostHeader
+                      title={post.title}
+                      coverImage={post.coverImage}
+                      date={post.date}
+                      author={post.author}
+                    />
+                  </div>
+                  <div className='lg:w-1/5 invisible lg:visible'></div>
+
+                  <div className='lg:w-1/5 invisible lg:visible'></div>
+                  <div className='w-full lg:w-3/5 post'>
+                    <PostBody content={post.content} />
+                  </div>
+                  <div className='lg:w-1/5 hidden lg:inline-block lg:p-8'>
+                    <Toc />
+                  </div>
+                </div>
+              </article>
         )}
       </Container>
     </Layout>
@@ -71,6 +99,7 @@ export async function getStaticProps({ params }: Params) {
     'ogImage',
     'coverImage',
   ])
+
   const content = await markdownToHtml(post.content || '')
 
   return {

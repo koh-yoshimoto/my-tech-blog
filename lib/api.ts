@@ -13,12 +13,39 @@ export function getPostBySlug(slug: string, fields: string[] = []) {
   const fullPath = join(postsDirectory, `${realSlug}.md`)
   const fileContents = fs.readFileSync(fullPath, 'utf8')
   const { data, content } = matter(fileContents)
-
   type Items = {
-    [key: string]: string
+    title: string,
+    slug: string,
+    content: string,
+    excerpt: string,
+    coverImage: string,
+    date: string,
+    author: {
+      name: string,
+      picture: string
+    }
+    ogImage: {
+      url: string
+    },
+    tags: string[]
   }
 
-  const items: Items = {}
+  const items: Items = {
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    coverImage: '',
+    date: '',
+    author: {
+      name:'',
+      picture: '',
+    },
+    ogImage: {
+      url: '',
+    },
+    tags: []
+  }
 
   // Ensure only the minimal needed data is exposed
   fields.forEach((field) => {
@@ -28,8 +55,14 @@ export function getPostBySlug(slug: string, fields: string[] = []) {
     if (field === 'content') {
       items[field] = content
     }
-
-    if (typeof data[field] !== 'undefined') {
+    if (field === 'title'||
+        field === 'excerpt' ||
+        field === 'coverImage' ||
+        field === 'date' ||
+        field === 'author' ||
+        field === 'ogImage' ||
+        field === 'tags'
+        ) {
       items[field] = data[field]
     }
   })
@@ -39,9 +72,16 @@ export function getPostBySlug(slug: string, fields: string[] = []) {
 
 export function getAllPosts(fields: string[] = []) {
   const slugs = getPostSlugs()
-  const posts = slugs
+  return slugs
     .map((slug) => getPostBySlug(slug, fields))
     // sort posts by date in descending order
     .sort((post1, post2) => (post1.date > post2.date ? -1 : 1))
-  return posts
+}
+
+export function getAllTags() {
+  const allPosts = getAllPosts(['tags', 'author', 'ogImage'])
+  console.log(allPosts[0]);
+  return allPosts.map(post => post.tags)
+    .flat()
+    .filter((e, i, a) => a.indexOf(e) === i)
 }
